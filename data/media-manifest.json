@@ -1,0 +1,107 @@
+{
+  "updatedAt": "2026-05-14T20:30:03.303Z",
+  "items": [
+    {
+      "type": "image",
+      "category": "mairie",
+      "filename": "IMG_0972.jpeg",
+      "src": "assets/photos/mairie/IMG_0972.jpeg"
+    },
+    {
+      "type": "image",
+      "category": "mairie",
+      "filename": "IMG_0974.jpeg",
+      "src": "assets/photos/mairie/IMG_0974.jpeg"
+    },
+    {
+      "type": "video",
+      "category": "ceremonie-henne",
+      "filename": "IMG_0988.MOV",
+      "src": "assets/videos/ceremonie-henne/IMG_0988.MOV"
+    },
+    {
+      "type": "video",
+      "category": "ceremonie-henne",
+      "filename": "IMG_0989.MOV",
+      "src": "assets/videos/ceremonie-henne/IMG_0989.MOV"
+    },
+    {
+      "type": "video",
+      "category": "ceremonie-henne",
+      "filename": "IMG_0990.MOV",
+      "src": "assets/videos/ceremonie-henne/IMG_0990.MOV"
+    },
+    {
+      "type": "video",
+      "category": "mairie",
+      "filename": "IMG_0973.MOV",
+      "src": "assets/videos/mairie/IMG_0973.MOV"
+    },
+    {
+      "type": "video",
+      "category": "mairie",
+      "filename": "IMG_0975.MOV",
+      "src": "assets/videos/mairie/IMG_0975.MOV"
+    },
+    {
+      "type": "video",
+      "category": "soiree",
+      "filename": "IMG_0993.MOV",
+      "src": "assets/videos/soiree/IMG_0993.MOV"
+    },
+    {
+      "type": "video",
+      "category": "soiree",
+      "filename": "IMG_0994.MOV",
+      "src": "assets/videos/soiree/IMG_0994.MOV"
+    },
+    {
+      "type": "video",
+      "category": "soiree",
+      "filename": "IMG_0995.MOV",
+      "src": "assets/videos/soiree/IMG_0995.MOV"
+    },
+    {
+      "type": "video",
+      "category": "soiree",
+      "filename": "IMG_0996.MOV",
+      "src": "assets/videos/soiree/IMG_0996.MOV"
+    },
+    {
+      "type": "video",
+      "category": "vin-dhonneur",
+      "filename": "IMG_0977.MOV",
+      "src": "assets/videos/vin-dhonneur/IMG_0977.MOV"
+    },
+    {
+      "type": "video",
+      "category": "vin-dhonneur",
+      "filename": "IMG_0978.MOV",
+      "src": "assets/videos/vin-dhonneur/IMG_0978.MOV"
+    },
+    {
+      "type": "video",
+      "category": "vin-dhonneur",
+      "filename": "IMG_0979.MOV",
+      "src": "assets/videos/vin-dhonneur/IMG_0979.MOV"
+    },
+    {
+      "type": "video",
+      "category": "vin-dhonneur",
+      "filename": "IMG_0980.MOV",
+      "src": "assets/videos/vin-dhonneur/IMG_0980.MOV"
+    },
+    {
+      "type": "video",
+      "category": "vin-dhonneur",
+      "filename": "IMG_0981.MOV",
+      "src": "assets/videos/vin-dhonneur/IMG_0981.MOV"
+    },
+    {
+      "type": "video",
+      "category": "vin-dhonneur",
+      "filename": "IMG_0982.MOV",
+      "src": "assets/videos/vin-dhonneur/IMG_0982.MOV"
+    }
+  ]
+}

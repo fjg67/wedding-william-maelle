@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Monogramme mariage M et W">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8f2e8" />
+      <stop offset="55%" stop-color="#efe2cc" />
+      <stop offset="100%" stop-color="#e3d1b0" />
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8e9b8" />
+      <stop offset="45%" stop-color="#d8b970" />
+      <stop offset="100%" stop-color="#b58a3f" />
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#fff6de" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#fff6de" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <rect width="256" height="256" rx="56" fill="url(#bg)" />
+  <circle cx="128" cy="128" r="96" fill="url(#glow)" />
+
+  <circle cx="128" cy="128" r="87" fill="none" stroke="url(#gold)" stroke-width="6" />
+  <circle cx="128" cy="128" r="75" fill="none" stroke="#c49c52" stroke-opacity="0.55" stroke-width="1.75" />
+
+  <g fill="none" stroke="#7f5c25" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M72 156V98l22 40 22-40v58" stroke-width="8" />
+    <path d="M140 98l17 58 16-41 16 41 17-58" stroke-width="8" />
+  </g>
+
+  <path d="M128 65c4 7 8 11 16 13-8 2-12 6-16 13-4-7-8-11-16-13 8-2 12-6 16-13Z" fill="#f4dfad" />
+  <path d="M64 186c2 4 5 6 9 7-4 1-7 3-9 7-2-4-5-6-9-7 4-1 7-3 9-7Z" fill="#e8cf98" opacity="0.85" />
+  <path d="M196 174c2 4 5 6 9 7-4 1-7 3-9 7-2-4-5-6-9-7 4-1 7-3 9-7Z" fill="#e8cf98" opacity="0.85" />
+</svg>
