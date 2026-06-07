@@ -5,9 +5,11 @@
   "description": "Galerie mariage avec upload persistant par section",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "migrate:supabase-media": "node scripts/migrate-media-to-supabase.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.49.4",
     "express": "^4.21.2",
     "multer": "^1.4.5-lts.1"
   }
