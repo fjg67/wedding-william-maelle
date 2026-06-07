@@ -942,6 +942,13 @@ function initGalleryViewer() {
         throw new Error(`delete-error-${response.status}`);
       }
 
+      let payload = null;
+      try {
+        payload = await response.json();
+      } catch (_error) {
+        payload = null;
+      }
+
       allMediaItems = allMediaItems.filter((item) => item.src !== src);
 
       if (activeFilter !== "all" && !allMediaItems.some((item) => item.category === activeFilter)) {
@@ -951,7 +958,7 @@ function initGalleryViewer() {
 
       applyCurrentFilter();
       window.dispatchEvent(new Event("gallery:media-updated"));
-      setViewerFeedback("Media supprime.");
+      setViewerFeedback(payload?.provider === "supabase" ? "Media supprime de Supabase." : "Media supprime.");
     } catch (_error) {
       setViewerFeedback("Impossible de supprimer ce media pour le moment.");
       deleteButton.disabled = false;
@@ -1153,6 +1160,13 @@ function initLightbox() {
         throw new Error(`delete-error-${response.status}`);
       }
 
+      let payload = null;
+      try {
+        payload = await response.json();
+      } catch (_error) {
+        payload = null;
+      }
+
       allMediaItems = allMediaItems.filter((item) => item.src !== src);
       applyCurrentFilter();
       lightboxPhotos = buildPhotoList();
@@ -1165,7 +1179,7 @@ function initLightbox() {
       }
 
       window.dispatchEvent(new Event("gallery:media-updated"));
-      setLightboxFeedback("Media supprime.");
+      setLightboxFeedback(payload?.provider === "supabase" ? "Media supprime de Supabase." : "Media supprime.");
     } catch (_error) {
       lightboxDelete.disabled = false;
       setLightboxFeedback("Impossible de supprimer ce media pour le moment.");

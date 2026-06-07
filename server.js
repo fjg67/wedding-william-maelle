@@ -453,7 +453,7 @@ app.delete("/api/media", async (req, res) => {
       return res.status(500).json({ error: "delete-failed" });
     }
 
-    return res.json({ removed: true, src });
+    return res.json({ removed: true, src, provider: "supabase" });
   }
 
   if (!isValidMediaPublicPath(src)) {
@@ -488,7 +488,8 @@ app.delete("/api/media", async (req, res) => {
 
   return res.json({
     removed: true,
-    src
+    src,
+    provider: "local"
   });
 });
 
