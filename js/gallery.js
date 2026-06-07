@@ -46,6 +46,85 @@ let viewerState = {
 
 const SLIDE_FADE_MS = 400;
 
+function getRuntimeConfig() {
+  const cfg = typeof window !== "undefined" ? window.WEDDING_CONFIG || {} : {};
+  return {
+    supabaseUrl: typeof cfg.supabaseUrl === "string" ? cfg.supabaseUrl.trim().replace(/\/+$/, "") : "",
+    supabaseAnonKey: typeof cfg.supabaseAnonKey === "string" ? cfg.supabaseAnonKey.trim() : "",
+    supabaseMediaTable: typeof cfg.supabaseMediaTable === "string" && cfg.supabaseMediaTable.trim()
+      ? cfg.supabaseMediaTable.trim()
+      : "media"
+  };
+}
+
+function extractFilenameFromPath(pathValue, fallback = "media") {
+  if (typeof pathValue !== "string" || !pathValue) {
+    return fallback;
+  }
+
+  const cleanPath = pathValue.split("?")[0].split("#")[0];
+  const filename = cleanPath.split("/").pop();
+  return filename || fallback;
+}
+
+function extractExtension(pathValue, fallback = "jpg") {
+  const filename = extractFilenameFromPath(pathValue, "");
+  const dotIndex = filename.lastIndexOf(".");
+  if (dotIndex <= 0 || dotIndex === filename.length - 1) {
+    return fallback;
+  }
+
+  return filename.slice(dotIndex + 1).toLowerCase();
+}
+
+function toSlug(value, fallback = "souvenir") {
+  if (typeof value !== "string" || !value.trim()) {
+    return fallback;
+  }
+
+  const slug = value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return slug || fallback;
+}
+
+function buildFriendlyDownloadFilename(item, index) {
+  const base = toSlug(item?.category, "souvenir");
+  const position = String((Number(index) || 0) + 1).padStart(3, "0");
+  const extension = extractExtension(item?.filename || item?.src || "", item?.type === "video" ? "mp4" : "jpg");
+  return `${base}-${position}.${extension}`;
+}
+
+async function downloadMediaFile(src, preferredFilename) {
+  const filename = preferredFilename || extractFilenameFromPath(src, "media");
+
+  try {
+    const response = await fetch(src, { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`download-failed-${response.status}`);
+    }
+
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+  } catch (_error) {
+    const link = document.createElement("a");
+    link.href = src;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
+}
+
 function insertMediaAtSectionEnd(mediaItem) {
   const lastIndex = allMediaItems.map((item) => item.category).lastIndexOf(mediaItem.category);
   if (lastIndex === -1) {
@@ -76,6 +155,11 @@ async function initAutoGalleryMedia() {
 }
 
 async function fetchPersistedMediaItems() {
+  const supabaseItems = await fetchSupabaseMediaItems();
+  if (supabaseItems.length) {
+    return supabaseItems;
+  }
+
   const endpoints = ["/api/media", "data/media-manifest.json"];
 
   for (const endpoint of endpoints) {
@@ -100,6 +184,57 @@ async function fetchPersistedMediaItems() {
   }
 
   return [];
+}
+
+async function fetchSupabaseMediaItems() {
+  const { supabaseUrl, supabaseAnonKey, supabaseMediaTable } = getRuntimeConfig();
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return [];
+  }
+
+  const selectFields = [
+    "type",
+    "category",
+    "filename",
+    "src",
+    "poster_src",
+    "web_src",
+    "media_position"
+  ].join(",");
+
+  const endpoints = [
+    `${supabaseUrl}/rest/v1/${encodeURIComponent(supabaseMediaTable)}?select=${encodeURIComponent(selectFields)}&order=created_at.asc,filename.asc`,
+    `${supabaseUrl}/rest/v1/${encodeURIComponent(supabaseMediaTable)}?select=${encodeURIComponent(selectFields)}&order=filename.asc`
+  ];
+
+  try {
+    for (const endpoint of endpoints) {
+      const response = await fetch(endpoint, {
+        headers: {
+          apikey: supabaseAnonKey,
+          Authorization: `Bearer ${supabaseAnonKey}`
+        },
+        cache: "no-store"
+      });
+
+      if (!response.ok) {
+        continue;
+      }
+
+      const payload = await response.json();
+      if (!Array.isArray(payload)) {
+        continue;
+      }
+
+      return payload
+        .map((item) => normalizePersistedItem(item))
+        .filter((item) => Boolean(item));
+    }
+
+    return [];
+  } catch (_error) {
+    return [];
+  }
 }
 
 function normalizePersistedItem(item) {
@@ -127,6 +262,8 @@ function normalizePersistedItem(item) {
     category: item.category,
     src,
     filename,
+    posterSrc: typeof item.posterSrc === "string" ? item.posterSrc : typeof item.poster_src === "string" ? item.poster_src : null,
+    webSrc: typeof item.webSrc === "string" ? item.webSrc : typeof item.web_src === "string" ? item.web_src : null,
     mediaPosition: item.mediaPosition || "center"
   };
 }
@@ -181,13 +318,18 @@ function initGalleryUploader() {
     feedback.textContent = message;
   };
 
-  const handleFiles = async (fileList) => {
+  const getSelectedTargetCategory = () => {
+    const value = sectionSelect.value;
+    return GALLERY_CATEGORIES.includes(value) ? value : "";
+  };
+
+  const handleFiles = async (fileList, forcedCategory = "") => {
     const files = Array.from(fileList || []);
     if (!files.length) {
       return;
     }
 
-    const targetCategory = sectionSelect.value;
+    const targetCategory = forcedCategory || getSelectedTargetCategory();
     if (!GALLERY_CATEGORIES.includes(targetCategory)) {
       setFeedback("Choisissez d'abord une section valide.");
       return;
@@ -268,10 +410,26 @@ function initGalleryUploader() {
   };
 
   fromFilesButton.addEventListener("click", () => {
+    const targetCategory = getSelectedTargetCategory();
+    if (!targetCategory) {
+      setFeedback("Choisissez d'abord une section valide.");
+      return;
+    }
+
+    filesInput.dataset.targetCategory = targetCategory;
+    setFeedback(`Ajout vers ${CATEGORY_LABELS[targetCategory] || targetCategory}.`);
     filesInput.click();
   });
 
   fromGalleryButton.addEventListener("click", () => {
+    const targetCategory = getSelectedTargetCategory();
+    if (!targetCategory) {
+      setFeedback("Choisissez d'abord une section valide.");
+      return;
+    }
+
+    galleryInput.dataset.targetCategory = targetCategory;
+    setFeedback(`Ajout vers ${CATEGORY_LABELS[targetCategory] || targetCategory}.`);
     galleryInput.click();
   });
 
@@ -280,16 +438,22 @@ function initGalleryUploader() {
   });
 
   uploadFab?.addEventListener("click", () => {
+    const targetCategory = getSelectedTargetCategory();
+    filesInput.dataset.targetCategory = targetCategory;
     filesInput.click();
   });
 
   filesInput.addEventListener("change", async () => {
-    await handleFiles(filesInput.files);
+    const targetCategory = filesInput.dataset.targetCategory || "";
+    await handleFiles(filesInput.files, targetCategory);
+    delete filesInput.dataset.targetCategory;
     filesInput.value = "";
   });
 
   galleryInput.addEventListener("change", async () => {
-    await handleFiles(galleryInput.files);
+    const targetCategory = galleryInput.dataset.targetCategory || "";
+    await handleFiles(galleryInput.files, targetCategory);
+    delete galleryInput.dataset.targetCategory;
     galleryInput.value = "";
   });
 }
@@ -386,10 +550,24 @@ function createMediaFigure(item) {
 }
 
 function readableCaption(filename, category) {
-  return filename
-    .replace(/\.[^.]+$/, "")
-    .replace(/[-_]+/g, " ")
-    .trim() || (CATEGORY_LABELS[category] || category);
+  const baseName = (filename || "").replace(/\.[^.]+$/, "").trim();
+  const normalized = baseName.replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim();
+
+  const imageMatch = normalized.match(/^img\s*(\d+)$/i);
+  if (imageMatch) {
+    return `Photo ${imageMatch[1]}`;
+  }
+
+  const videoMatch = normalized.match(/^vid(?:eo)?\s*(\d+)$/i);
+  if (videoMatch) {
+    return `Video ${videoMatch[1]}`;
+  }
+
+  if (normalized) {
+    return normalized;
+  }
+
+  return CATEGORY_LABELS[category] || category;
 }
 
 function guessVideoMimeType(filename) {
@@ -401,6 +579,10 @@ function guessVideoMimeType(filename) {
 }
 
 function getVideoPosterPath(item) {
+  if (item?.posterSrc) {
+    return item.posterSrc;
+  }
+
   const encodedFilename = encodeURIComponent(item.filename);
   return `assets/posters/${item.category}/${encodedFilename}.png`;
 }
@@ -414,6 +596,13 @@ function getVideoPlaybackSource(item, video) {
       return {
         src: item.src,
         type: "video/quicktime"
+      };
+    }
+
+    if (item?.webSrc) {
+      return {
+        src: item.webSrc,
+        type: "video/mp4"
       };
     }
 
@@ -461,10 +650,12 @@ function initGalleryViewer() {
   const counter = document.getElementById("gallery-counter");
   const categoryLabel = document.getElementById("gallery-current-category-label");
   const download = document.getElementById("gallery-download");
+  const deleteButton = document.getElementById("gallery-delete");
   const expandButton = document.getElementById("gallery-expand");
   const emptyState = document.getElementById("gallery-empty");
   const galleryGrid = document.getElementById("gallery-grid");
   const emptyCta = document.getElementById("gallery-empty-cta");
+  const uploadFeedback = document.getElementById("gallery-upload-feedback");
 
   if (!viewer || !viewerMain || !layerA || !layerB || !thumbs || !galleryGrid) {
     return;
@@ -473,6 +664,19 @@ function initGalleryViewer() {
   const layers = { a: layerA, b: layerB };
 
   const getNextLayerKey = () => (viewerState.activeLayer === "a" ? "b" : "a");
+
+  const setViewerFeedback = (message) => {
+    if (uploadFeedback) {
+      uploadFeedback.textContent = message;
+    }
+  };
+
+  const syncActiveFilterPill = () => {
+    const pills = document.querySelectorAll(".pill");
+    pills.forEach((pill) => {
+      pill.classList.toggle("is-active", (pill.dataset.filter || "all") === activeFilter);
+    });
+  };
 
   const setCounter = (index, total) => {
     if (!counter) {
@@ -500,8 +704,16 @@ function initGalleryViewer() {
 
     if (download) {
       download.href = item.src;
-      const filename = item.filename || item.src.split("/").pop() || "media";
+      const filename = buildFriendlyDownloadFilename(item, currentSlideIndex);
       download.setAttribute("download", filename);
+      download.dataset.src = item.src;
+      download.dataset.filename = filename;
+    }
+
+    if (deleteButton) {
+      deleteButton.dataset.src = item.src;
+      deleteButton.dataset.label = readableCaption(item.filename, item.category);
+      deleteButton.disabled = false;
     }
 
     if (expandButton) {
@@ -613,6 +825,11 @@ function initGalleryViewer() {
   const showEmptyState = () => {
     viewerMain.classList.add("is-hidden");
     thumbs.innerHTML = "";
+    if (deleteButton) {
+      deleteButton.disabled = true;
+      deleteButton.removeAttribute("data-src");
+      deleteButton.removeAttribute("data-label");
+    }
     if (emptyState) {
       emptyState.classList.remove("is-hidden");
     }
@@ -684,6 +901,61 @@ function initGalleryViewer() {
 
   expandButton?.addEventListener("click", () => {
     openLightboxFromIndex(currentSlideIndex);
+  });
+
+  download?.addEventListener("click", async (event) => {
+    const src = download.dataset.src || download.getAttribute("href") || "";
+    if (!src || src === "#") {
+      return;
+    }
+
+    event.preventDefault();
+    const filename = download.dataset.filename || download.getAttribute("download") || extractFilenameFromPath(src, "media");
+    await downloadMediaFile(src, filename);
+  });
+
+  deleteButton?.addEventListener("click", async () => {
+    const src = deleteButton.dataset.src || "";
+    if (!src) {
+      return;
+    }
+
+    const label = deleteButton.dataset.label || "ce media";
+    const confirmed = window.confirm(`Supprimer definitivement ${label} ?`);
+    if (!confirmed) {
+      return;
+    }
+
+    deleteButton.disabled = true;
+    setViewerFeedback("Suppression en cours...");
+
+    try {
+      const response = await fetch("/api/media", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ src })
+      });
+
+      if (!response.ok) {
+        throw new Error(`delete-error-${response.status}`);
+      }
+
+      allMediaItems = allMediaItems.filter((item) => item.src !== src);
+
+      if (activeFilter !== "all" && !allMediaItems.some((item) => item.category === activeFilter)) {
+        activeFilter = "all";
+        syncActiveFilterPill();
+      }
+
+      applyCurrentFilter();
+      window.dispatchEvent(new Event("gallery:media-updated"));
+      setViewerFeedback("Media supprime.");
+    } catch (_error) {
+      setViewerFeedback("Impossible de supprimer ce media pour le moment.");
+      deleteButton.disabled = false;
+    }
   });
 
   viewerMain.addEventListener("click", (event) => {
@@ -771,11 +1043,13 @@ function initLightbox() {
   const lightboxCategory = document.getElementById("lightbox-category");
   const lightboxTitle = document.getElementById("lightbox-title");
   const lightboxDownload = document.getElementById("lightbox-download");
+  const lightboxDelete = document.getElementById("lightbox-delete");
   const closeButton = document.getElementById("lightbox-close");
   const closeInline = document.getElementById("lightbox-close-inline");
   const prevButton = document.getElementById("lightbox-prev");
   const nextButton = document.getElementById("lightbox-next");
   const galleryGrid = document.getElementById("gallery-grid");
+  const uploadFeedback = document.getElementById("gallery-upload-feedback");
 
   if (!lightbox || !lightboxImage || !galleryGrid) {
     return;
@@ -785,8 +1059,15 @@ function initLightbox() {
   let touchStartX = 0;
   let lightboxPhotos = [];
 
+  const setLightboxFeedback = (message) => {
+    if (uploadFeedback) {
+      uploadFeedback.textContent = message;
+    }
+  };
+
   const buildPhotoList = () => filteredMediaItems.map((item) => ({
     src: item.src,
+    filename: item.filename,
     alt: item.filename,
     title: readableCaption(item.filename, item.category),
     category: item.category,
@@ -818,10 +1099,78 @@ function initLightbox() {
 
     if (lightboxDownload) {
       lightboxDownload.href = media.src;
-      const filename = media.src.split("/").pop() || "media";
+      const filename = buildFriendlyDownloadFilename(media, currentIndex);
       lightboxDownload.setAttribute("download", filename);
+      lightboxDownload.dataset.src = media.src;
+      lightboxDownload.dataset.filename = filename;
+    }
+
+    if (lightboxDelete) {
+      lightboxDelete.dataset.src = media.src;
+      lightboxDelete.dataset.label = media.title || "ce media";
+      lightboxDelete.disabled = false;
     }
   };
+
+  lightboxDownload?.addEventListener("click", async (event) => {
+    const src = lightboxDownload.dataset.src || lightboxDownload.getAttribute("href") || "";
+    if (!src || src === "#") {
+      return;
+    }
+
+    event.preventDefault();
+    const filename = lightboxDownload.dataset.filename || lightboxDownload.getAttribute("download") || extractFilenameFromPath(src, "media");
+    await downloadMediaFile(src, filename);
+  });
+
+  lightboxDelete?.addEventListener("click", async (event) => {
+    event.preventDefault();
+
+    const src = lightboxDelete.dataset.src || "";
+    if (!src) {
+      return;
+    }
+
+    const label = lightboxDelete.dataset.label || "ce media";
+    const confirmed = window.confirm(`Supprimer definitivement ${label} ?`);
+    if (!confirmed) {
+      return;
+    }
+
+    lightboxDelete.disabled = true;
+    setLightboxFeedback("Suppression en cours...");
+
+    try {
+      const response = await fetch("/api/media", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ src })
+      });
+
+      if (!response.ok) {
+        throw new Error(`delete-error-${response.status}`);
+      }
+
+      allMediaItems = allMediaItems.filter((item) => item.src !== src);
+      applyCurrentFilter();
+      lightboxPhotos = buildPhotoList();
+
+      if (!lightboxPhotos.length) {
+        closeLightbox();
+      } else {
+        currentIndex = Math.min(currentIndex, lightboxPhotos.length - 1);
+        updateLightbox();
+      }
+
+      window.dispatchEvent(new Event("gallery:media-updated"));
+      setLightboxFeedback("Media supprime.");
+    } catch (_error) {
+      lightboxDelete.disabled = false;
+      setLightboxFeedback("Impossible de supprimer ce media pour le moment.");
+    }
+  });
 
   const openLightbox = (index) => {
     lightboxPhotos = buildPhotoList();
@@ -884,6 +1233,14 @@ function initLightbox() {
   nextButton?.addEventListener("click", showNext);
 
   lightbox.addEventListener("click", (event) => {
+    const closeTarget = event.target.closest("#lightbox-close, #lightbox-close-inline, .lightbox-close, .lightbox-close-inline");
+    if (closeTarget) {
+      event.preventDefault();
+      event.stopPropagation();
+      closeLightbox();
+      return;
+    }
+
     if (event.target === lightbox) {
       closeLightbox();
     }
