@@ -670,6 +670,16 @@ button {
   transition: width 0.28s ease, height 0.28s ease, background 0.28s ease;
 }
 
+body.lightbox-open,
+body.lightbox-open * {
+  cursor: auto !important;
+}
+
+body.lightbox-open #custom-cursor,
+body.lightbox-open #custom-cursor-follower {
+  opacity: 0;
+}
+
 body.is-hovering-link #custom-cursor-follower {
   width: 64px;
   height: 64px;

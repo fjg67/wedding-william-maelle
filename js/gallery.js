@@ -14,19 +14,21 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
-const GALLERY_CATEGORIES = ["mairie", "vin-dhonneur", "soiree", "ceremonie-henne"];
+const GALLERY_CATEGORIES = ["mairie", "vin-dhonneur", "salle-des-fetes", "ceremonie-henne", "gateaux"];
 const CATEGORY_LABELS = {
   mairie: "Mairie",
   "vin-dhonneur": "Vin d'honneur",
-  soiree: "Soiree",
-  "ceremonie-henne": "Ceremonie de l'henne"
+  "salle-des-fetes": "Salle des fêtes",
+  "ceremonie-henne": "Ceremonie de l'henne",
+  gateaux: "Gateaux"
 };
 
 const CATEGORY_ICONS = {
   mairie: '<svg viewBox="0 0 24 24"><circle cx="9.2" cy="14.2" r="4.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12.3 8.7L15.8 5.2C16.8 4.2 18.4 4.2 19.4 5.2C20.4 6.2 20.4 7.8 19.4 8.8L15.9 12.3" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
   "vin-dhonneur": '<svg viewBox="0 0 24 24"><path d="M6 4V7.2C6 9 7.4 10.4 9.2 10.4C11 10.4 12.4 9 12.4 7.2V4M9.2 10.4V20" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M17.5 4L15.7 9.2H19.3L17.5 4ZM17.5 9.2V20" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
-  soiree: '<svg viewBox="0 0 24 24"><path d="M6 17L10 13M10 13L15.5 18.5M10 13L8.2 7.3L13.9 9.1M15.5 5.5L18.5 8.5M16 8L18 6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+  "salle-des-fetes": '<svg viewBox="0 0 24 24"><path d="M4 20V10L12 4L20 10V20" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 20V14H16V20" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
   "ceremonie-henne": '<svg viewBox="0 0 24 24"><path d="M7 17C7 13 10 9.8 14 9.8C15.7 9.8 17.1 10.3 18.4 11.3C16.9 14.7 13.8 17 10 17H7Z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9 19C12.5 19 15.6 16.8 17.1 13.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+  gateaux: '<svg viewBox="0 0 24 24"><path d="M4 13H20V20H4Z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M4 13C4 11.3 5.3 10 7 10H17C18.7 10 20 11.3 20 13" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9 10C9 8.7 10 7.7 11.3 7.7C12.3 7.7 12.9 8.2 13.4 9C13.9 8.2 14.6 7.7 15.6 7.7C16.9 7.7 17.9 8.7 17.9 10" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
   all: '<svg viewBox="0 0 24 24"><path d="M12 3L13.9 8.1L19 10L13.9 11.9L12 17L10.1 11.9L5 10L10.1 8.1Z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>'
 };
 
@@ -831,12 +833,14 @@ function initLightbox() {
     updateLightbox();
     lightbox.classList.add("is-open");
     lightbox.setAttribute("aria-hidden", "false");
+    document.body.classList.add("lightbox-open");
     document.body.style.overflow = "hidden";
   };
 
   const closeLightbox = () => {
     lightbox.classList.remove("is-open");
     lightbox.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("lightbox-open");
     document.body.style.overflow = "";
   };
 

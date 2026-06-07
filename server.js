@@ -11,7 +11,7 @@ const DATA_DIR = path.join(ROOT_DIR, "data");
 const MANIFEST_PATH = path.join(DATA_DIR, "media-manifest.json");
 const TMP_UPLOAD_DIR = path.join(ROOT_DIR, ".tmp", "uploads");
 
-const CATEGORIES = ["mairie", "vin-dhonneur", "soiree", "ceremonie-henne"];
+const CATEGORIES = ["mairie", "vin-dhonneur", "salle-des-fetes", "ceremonie-henne", "gateaux"];
 const IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp", "gif", "avif"]);
 const VIDEO_EXTENSIONS = new Set(["mp4", "webm", "mov", "m4v"]);
 
@@ -156,7 +156,7 @@ app.use(express.json());
 app.use(express.static(ROOT_DIR));
 
 app.get("/api/media", async (_req, res) => {
-  const manifest = await readManifest();
+  const manifest = await buildManifestFromDisk();
   res.json(manifest);
 });
 

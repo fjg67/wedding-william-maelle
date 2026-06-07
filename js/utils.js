@@ -2,6 +2,8 @@
    Initialisation globale
    ============================== */
 document.addEventListener("DOMContentLoaded", () => {
+  forceTopScroll();
+
   const loader = document.getElementById("page-loader");
 
   window.setTimeout(() => {
@@ -19,6 +21,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.addEventListener("click", skipIntro, { once: true });
 });
+
+window.addEventListener("load", () => {
+  forceTopScroll();
+});
+
+window.addEventListener("pageshow", () => {
+  forceTopScroll();
+});
+
+function forceTopScroll() {
+  if ("scrollRestoration" in history) {
+    history.scrollRestoration = "manual";
+  }
+
+  const reset = () => {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  };
+
+  reset();
+  requestAnimationFrame(reset);
+  window.setTimeout(reset, 50);
+  window.setTimeout(reset, 250);
+  window.setTimeout(reset, 600);
+  window.setTimeout(reset, 1200);
+  window.setTimeout(reset, 2000);
+}
 
 /* ==============================
    Intro cinematique courte
